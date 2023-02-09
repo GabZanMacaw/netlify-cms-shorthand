@@ -2,14 +2,268 @@
 ---
 
 <html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<meta name="viewport" content="width=device-width" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Astro</title>
-	</head>
-	<body>
-		<h1>Astro</h1>
-	</body>
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width" />
+    <meta name="generator" content={Astro.generator} />
+    <title>Netlify CMS Shorthand</title>
+  </head>
+  <body>
+    <div id="container">
+      <div class="editor" id="codemirror"></div>
+      <div class="preview">
+        <code></code>
+      </div>
+    </div>
+  </body>
 </html>
+
+<script>
+  import { basicSetup } from "codemirror";
+  import { Compartment } from "@codemirror/state";
+  import { javascript } from "@codemirror/lang-javascript";
+  import { EditorView, ViewUpdate } from "@codemirror/view";
+  import { parse, stringify } from "yaml";
+
+  (async () => {
+    const editorElement =
+      document.querySelector<HTMLDivElement>("#codemirror")!;
+    const preview = document.querySelector<HTMLPreElement>(".preview code")!;
+
+    const languageConf = new Compartment();
+
+    const funcs = await (await fetch("/netlify-cms-util.js")).text();
+
+    function updatePreview() {
+      try {
+        preview.textContent = stringify(
+          new Function(funcs + editor.state.doc.toString())()
+        );
+      } catch (e) {
+        return;
+      }
+    }
+
+    const editor = new EditorView({
+      extensions: [
+        basicSetup,
+        languageConf.of(javascript()),
+        EditorView.updateListener.of((v: ViewUpdate) => {
+          if (v.docChanged) {
+            updatePreview();
+          }
+        }),
+      ],
+      doc: `return {
+	backend: {
+		name: "git-gateway",
+		branch: "master",
+	},
+	media_folder: "/public/uploads",
+	public_folder: "/uploads",
+	display_url: "/",
+	locale: "pt",
+	collections: [
+		{
+			label: "Conteúdo",
+			name: "conteudo",
+			i18n: { structure: "single_file", locales: ["pt", "en"] },
+			files: [
+				cmsFile("Página", null, "yml", [
+					fObject(
+						"Hero",
+						{
+							summary: "{{fields.titulo}}",
+						},
+						[
+							fString("Slogan", {
+								hint: "Pequeno texto laranja em cima do título.",
+							}),
+							fString("Título"),
+							fText("Parágrafo", {
+								hint: "Pequeno texto abaixo do título.",
+							}),
+							fImage("Imagem", {
+								hint: "Imagem grande de um veículo.",
+							}),
+							fString("Alt text", {
+								name: "alt",
+								hint: "Texto descritivo da imagem acima. Usado por leitores de tela e indexadores de imagem.",
+							}),
+						]
+					),
+					fObject(
+						"Sobre",
+						{
+							summary: "{{fields.texto}}",
+						},
+						[
+							fMarkdown("Texto", {
+								hint: "Texto à esquerda da imagem.",
+							}),
+							fImage("Imagem"),
+							fString("Alt text", {
+								name: "alt",
+								hint: "Texto descritivo da imagem acima. Usado por leitores de tela e indexadores de imagem.",
+							}),
+							fImage("Destaque Ícone"),
+							fString("Destaque Título"),
+							fString("Destaque Texto"),
+						]
+					),
+					fList(
+						"Características",
+						{
+							summary: "{{fields.titulo}}",
+						},
+						{
+							fields: [
+								fString("Título"),
+								fString("Texto"),
+								fString("Vídeo URL", {
+									hint: "Link de um vídeo no YouTube.",
+								}),
+								fImage("Vídeo Thumbnail", {
+									i18n: true,
+								}),
+								fImage("Imagem"),
+								fString("Alt text", {
+									name: "alt",
+									hint: "Texto descritivo da imagem acima. Usado por leitores de tela e indexadores de imagem.",
+								}),
+							],
+						}
+					),
+					fObject(
+						"Versatilidade",
+						{
+							summary: "{{fields.titulo}}",
+						},
+						[
+							fText("Título"),
+							fText("Texto"),
+							fImage("Imagem"),
+							fString("Alt text", {
+								name: "alt",
+								hint: "Texto descritivo da imagem acima. Usado por leitores de tela e indexadores de imagem.",
+							}),
+						]
+					),
+					fList(
+						"Ícones",
+						{
+							summary: "{{fields.texto}}",
+						},
+						{
+							fields: [
+								fImage("Ícone", {
+									i18n: true,
+								}),
+								fString("Texto"),
+							],
+						}
+					),
+					fObject(
+						"Marcopolo",
+						{
+							summary: "{{fields.texto}}",
+						},
+						[fMarkdown("Texto"), fString("Website")]
+					),
+					fObject(
+						"CreativeBuses",
+						{
+							summary: "{{fields.titulo}}",
+						},
+						[
+							fString("Título"),
+							fImage("Imagem"),
+							fString("Alt text", {
+								name: "alt",
+								hint: "Texto descritivo da imagem acima. Usado por leitores de tela e indexadores de imagem.",
+							}),
+							fString("Website"),
+						]
+					),
+					fObject(
+						"Contato",
+						{
+							summary: "{{fields.titulo}}",
+						},
+						[fString("Título"), fMarkdown("Texto")]
+					),
+				]),
+				cmsFile("Contato", null, "yml", [
+					fString("Email"),
+					fString("Email formulário", {
+						hint: "Endereço de email para o qual o formulário vai.",
+					}),
+					fString("Telefone"),
+				]),
+				cmsFile("SEO", null, "yml", [
+					fString("Hostname", {
+						hint: "URL completo da home page do site para o idioma selecionado, SEM incluir a barra (/) final. Ex: https://marcopolo.com.br",
+					}),
+					fString("Título do site"),
+					fText("Descrição do site"),
+					fString("Palavras-chave"),
+					fImage("Imagem de compartilhamento"),
+					fImage("Ícone do site"),
+				]),
+				cmsFile("Traduções", null, "yml", [
+					fString("Home"),
+					fString("About"),
+					fString("Features"),
+					fString("Contact us"),
+					fText("About Marcopolo Envio"),
+					fString("Order now"),
+					fString("And many more"),
+					fString("Website"),
+					fString("Click here"),
+					fString("Your information is safe"),
+					fString("Fill in the form below"),
+					fString("Name"),
+					fString("E-mail"),
+					fString("Phone"),
+					fString("Message"),
+					fString("Send message"),
+					fString("Message sent"),
+					fString("Message error"),
+				]),
+			],
+		},
+	],
+};`,
+      parent: editorElement,
+    });
+
+    updatePreview();
+  })();
+</script>
+
+<style lang="scss">
+  body {
+    margin: 0;
+    padding: 0;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  #container {
+    height: 100vh;
+    display: flex;
+
+    .editor,
+    .preview {
+      width: 50%;
+      height: 100%;
+    }
+
+    .preview code {
+      white-space: pre;
+    }
+  }
+</style>
